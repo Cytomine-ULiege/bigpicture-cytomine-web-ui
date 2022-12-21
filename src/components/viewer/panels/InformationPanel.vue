@@ -75,6 +75,29 @@
         <td v-else>{{$t('unknown')}}</td>
       </tr>
       <tr>
+        <td><strong>{{$t('preset')}}</strong></td>
+        <td>
+          <b-field>
+            <b-select :placeholder="$t('select-preset')" size="is-small" v-model="selectedPreset">
+              <option :value="null">
+                {{ $t('none') }}
+              </option>
+              <option v-for="user in availablePresets" :value="user" :key="user.id">
+                {{ presetName(user) }}
+              </option>
+            </b-select>
+          </b-field>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" class="actions">
+          <div class="buttons">
+            <button class="button is-small" @click="savePreset()">{{$t('button-save-preset')}}</button>
+            <button class="button is-small" @click="loadPreset()">{{$t('button-load-preset')}}</button>
+          </div>
+        </td>
+      </tr>
+      <tr>
         <td colspan="2" class="actions">
           <div class="buttons">
             <button v-if="canEdit" class="button is-small" @click="calibrationModal = true">
@@ -126,8 +149,12 @@
 
 <script>
 import {get} from '@/utils/store-helpers';
+import {fullName} from '@/utils/user-utils.js';
+
 import ImageName from '@/components/image/ImageName';
 import CalibrationModal from '@/components/image/CalibrationModal';
+
+import {Preset, PresetChannel, PresetCollection, PresetChannelCollection} from 'cytomine-client';
 
 export default {
   name: 'information-panel',
@@ -142,19 +169,27 @@ export default {
     return {
       calibrationModal: false,
       isFirstImage: false,
-      isLastImage: false
+      isLastImage: false,
+      users: [],
+      presets: [],
+      presetChannels: {},
+      selectedPreset: null,
     };
   },
   computed: {
     currentUser: get('currentUser/user'),
+    project: get('currentProject/project'),
     viewerModule() {
       return this.$store.getters['currentProject/currentViewerModule'];
+    },
+    viewerWrapper() {
+      return this.$store.getters['currentProject/currentViewer'];
     },
     imageModule() {
       return this.$store.getters['currentProject/imageModule'](this.index);
     },
-    viewerWrapper() {
-      return this.$store.getters['currentProject/currentViewer'];
+    imageWrapper() {
+      return this.viewerWrapper.images[this.index];
     },
     image() {
       return this.viewerWrapper.images[this.index].imageInstance;
@@ -170,7 +205,11 @@ export default {
     },
     isActiveImage() {
       return this.viewerWrapper.activeImage === this.index;
-    }
+    },
+    availablePresets() {
+      let userIds = this.presets.map(preset => preset.user);
+      return this.users.filter(user => userIds.includes(user.id));
+    },
   },
   methods: {
     setResolution(resolution) {
@@ -269,6 +308,107 @@ export default {
       else if (key === 'nav-previous-image-in-group') {
         this.previousImageInGroup();
       }
+    },
+
+    async fetchUsers() {
+      this.users = (await this.project.fetchUsers()).array;
+    },
+    async fetchPresets() {
+      this.presets = (await PresetCollection.fetchAll({
+        filterKey: 'project',
+        filterValue: this.project.id,
+      })).array;
+
+      /* Initialize the preset channels by using the preset id */
+      this.presets.forEach(preset => {
+        this.presetChannels[preset.id] = [];
+      });
+    },
+    async fetchPresetChannels() {
+      let presetChannels = (await PresetChannelCollection.fetchAll({
+        filterKey: 'imageinstance',
+        filterValue: this.image.id,
+      })).array;
+
+      /* Filter the preset channels by preset */
+      presetChannels.forEach(pc => this.presetChannels[pc.preset].push(pc));
+    },
+    presetName(user) {
+      let name = fullName(user);
+      let id = (this.currentUser.isDeveloper) ? `(${this.$t('id')}: ${user.id})` : '';
+
+      return `${name} ${id}`;
+    },
+    loadPreset() {
+      if (!this.selectedPreset) {
+        return;
+      }
+
+      let preset = this.presets.find(preset => preset.user === this.selectedPreset.id);
+
+      /* Load the preset */
+      this.presetChannels[preset.id].forEach(pc => {
+        let indexApparentChannel = pc['channel'];
+
+        this.$store.commit(this.imageModule + 'setApparentChannelGamma',
+          {indexApparentChannel, gamma: pc['gamma']}
+        );
+        this.$store.commit(this.imageModule + 'setApparentChannelInverted',
+          {indexApparentChannel, inverted: pc['inverted']}
+        );
+        this.$store.commit(this.imageModule + 'setApparentChannelBounds',
+          {indexApparentChannel, bounds: {min: pc['min'], max: pc['max']}}
+        );
+        this.$store.commit(this.imageModule + 'setHistogramLogScale', pc['logScale']);
+        this.$store.commit(this.imageModule + 'setIntensitiesByMinMax', pc['intMinMax']);
+      });
+    },
+    async savePreset() {
+      let preset = this.presets.find(preset => preset.user === this.currentUser.id);
+      if (!preset) {
+        /* Add the preset to the database */
+        preset = await new Preset({
+          project: this.project.id,
+          user: this.currentUser.id,
+          image: this.image.id,
+        }).save();
+
+        this.presets.push(preset);
+        this.presetChannels[preset.id] = [];
+      }
+
+      /* Save the current configuration of each channel of the image */
+      let apparentChannels = this.imageWrapper.colors.apparentChannels;
+      for (let i = 0; i < apparentChannels.length; i++) {
+        let properties = {
+          image: this.image.id,
+          preset: preset.id,
+          gamma: apparentChannels[i].gamma,
+          channel: apparentChannels[i].index,
+          min: apparentChannels[i].bounds.min,
+          max: apparentChannels[i].bounds.max,
+          inverted: apparentChannels[i].inverted,
+          intMinMax: this.imageWrapper.colors.intensitiesByMinMax,
+          logScale: this.imageWrapper.colors.histogramLogScale,
+        };
+
+        /* Add id of preset channel if it already exists */
+        Object.assign(properties, {id: this.presetChannels[preset.id][i]?.id});
+
+        this.presetChannels[preset.id][i] = await new PresetChannel(properties).save();
+      }
+    }
+  },
+  async created() {
+    try {
+      await Promise.all([
+        this.fetchUsers(),
+        this.fetchPresets(),
+        this.fetchPresetChannels(),
+      ]);
+    }
+    catch(error) {
+      console.log(error);
     }
   },
   mounted() {
