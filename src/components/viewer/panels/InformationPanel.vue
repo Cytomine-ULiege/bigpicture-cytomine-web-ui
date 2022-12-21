@@ -361,6 +361,16 @@ export default {
         );
         this.$store.commit(this.imageModule + 'setHistogramLogScale', pc['logScale']);
         this.$store.commit(this.imageModule + 'setIntensitiesByMinMax', pc['intMinMax']);
+
+        if (pc['color']) {
+          this.$store.commit(this.imageModule + 'setApparentChannelColor',
+            {indexApparentChannel, color: pc['color'], isColormap: false}
+          );
+        }
+
+        this.$store.dispatch(this.imageModule + 'setApparentChannelVisibility',
+          {indexApparentChannel, visible: pc['visible']}
+        );
       });
     },
     async savePreset() {
@@ -390,6 +400,8 @@ export default {
           inverted: apparentChannels[i].inverted,
           intMinMax: this.imageWrapper.colors.intensitiesByMinMax,
           logScale: this.imageWrapper.colors.histogramLogScale,
+          visible: apparentChannels[i].visible,
+          color: apparentChannels[i].color,
         };
 
         /* Add id of preset channel if it already exists */
