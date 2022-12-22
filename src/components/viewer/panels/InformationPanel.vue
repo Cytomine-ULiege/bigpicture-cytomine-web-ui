@@ -154,7 +154,14 @@ import {fullName} from '@/utils/user-utils.js';
 import ImageName from '@/components/image/ImageName';
 import CalibrationModal from '@/components/image/CalibrationModal';
 
-import {Preset, PresetChannel, PresetCollection, PresetChannelCollection} from 'cytomine-client';
+import {
+  Preset,
+  PresetChannel,
+  PresetLayer,
+  PresetCollection,
+  PresetChannelCollection,
+  PresetLayerCollection,
+} from 'cytomine-client';
 
 export default {
   name: 'information-panel',
@@ -173,6 +180,7 @@ export default {
       users: [],
       presets: [],
       presetChannels: {},
+      presetLayers: {},
       selectedPreset: null,
     };
   },
@@ -311,7 +319,7 @@ export default {
     },
 
     async fetchUsers() {
-      this.users = (await this.project.fetchUsers()).array;
+      this.users = (await this.project.fetchUserLayers()).array;
     },
     async fetchPresets() {
       this.presets = (await PresetCollection.fetchAll({
@@ -322,6 +330,7 @@ export default {
       /* Initialize the preset channels by using the preset id */
       this.presets.forEach(preset => {
         this.presetChannels[preset.id] = [];
+        this.presetLayers[preset.id] = [];
       });
     },
     async fetchPresetChannels() {
@@ -332,6 +341,15 @@ export default {
 
       /* Filter the preset channels by preset */
       presetChannels.forEach(pc => this.presetChannels[pc.preset].push(pc));
+    },
+    async fetchPresetLayers() {
+      let presetLayers = (await PresetLayerCollection.fetchAll({
+        filterKey: 'imageinstance',
+        filterValue: this.image.id,
+      })).array;
+
+      /* Filter the preset layers by preset */
+      presetLayers.forEach(pl => this.presetLayers[pl.preset].push(pl));
     },
     presetName(user) {
       let name = fullName(user);
@@ -346,7 +364,7 @@ export default {
 
       let preset = this.presets.find(preset => preset.user === this.selectedPreset.id);
 
-      /* Load the preset */
+      /* Load the preset of the channels of the image */
       this.presetChannels[preset.id].forEach(pc => {
         let indexApparentChannel = pc['channel'];
 
@@ -372,21 +390,18 @@ export default {
           {indexApparentChannel, visible: pc['visible']}
         );
       });
+
+      /* Load the preset of the annotation layers */
+      this.presetLayers[preset.id].forEach(pl => {
+        let layer = this.users.find(user => user.id === pl.user);
+        layer.visible = pl.visible;
+        layer.drawOn = pl.drawOn;
+
+        this.$store.commit(this.imageModule + 'setLayersOpacity', Number(pl.opacity));
+        this.$store.dispatch(this.imageModule + 'addLayer', layer);
+      });
     },
-    async savePreset() {
-      let preset = this.presets.find(preset => preset.user === this.currentUser.id);
-      if (!preset) {
-        /* Add the preset to the database */
-        preset = await new Preset({
-          project: this.project.id,
-          user: this.currentUser.id,
-          image: this.image.id,
-        }).save();
-
-        this.presets.push(preset);
-        this.presetChannels[preset.id] = [];
-      }
-
+    async savePresetChannels(preset) {
       /* Save the current configuration of each channel of the image */
       let apparentChannels = this.imageWrapper.colors.apparentChannels;
       for (let i = 0; i < apparentChannels.length; i++) {
@@ -404,11 +419,65 @@ export default {
           color: apparentChannels[i].color,
         };
 
-        /* Add id of preset channel if it already exists */
+        /* Add id of preset channel if it already exists in the data */
         Object.assign(properties, {id: this.presetChannels[preset.id][i]?.id});
 
         this.presetChannels[preset.id][i] = await new PresetChannel(properties).save();
       }
+    },
+    async savePresetLayers(preset) {
+      /* Save the selected annotation layers currently displayed */
+      let selectedLayers = this.imageWrapper.layers.selectedLayers;
+      for (const layer of selectedLayers) {
+        /* Find if the layer is already registered in the preset */
+        let index = this.presetLayers[preset.id].findIndex(pl => {
+          return pl.user === layer.id;
+        });
+
+        let pl = await new PresetLayer({
+          id: this.presetLayers[preset.id][index]?.id,
+          image: this.image.id,
+          preset: preset.id,
+          user: layer.id,
+          opacity: this.imageWrapper.style.opacity,
+          drawOn: layer.drawOn,
+          visible: layer.visible,
+        }).save();
+
+        if (index >= 0) {
+          this.presetLayers[preset.id][index] = pl;
+        }
+        else {
+          this.presetLayers[preset.id].push(pl);
+        }
+      }
+
+      /* Remove the annotation layers that are not displayed anymore */
+      let userIds = selectedLayers.map(user => user.id);
+      let toDelete = this.presetLayers[preset.id].filter(pl => !userIds.includes(pl.user));
+      for (const layer of toDelete) {
+        await layer.delete();
+      }
+      /* Remove the deleted layers from the data */
+      this.presetLayers[preset.id] = this.presetLayers[preset.id].filter(pl => !toDelete.includes(pl));
+    },
+    async savePreset() {
+      let preset = this.presets.find(preset => preset.user === this.currentUser.id);
+      if (!preset) {
+        /* Add the preset to the database */
+        preset = await new Preset({
+          project: this.project.id,
+          user: this.currentUser.id,
+          image: this.image.id,
+        }).save();
+
+        this.presets.push(preset);
+        this.presetChannels[preset.id] = [];
+        this.presetLayers[preset.id] = [];
+      }
+
+      await this.savePresetChannels(preset);
+      await this.savePresetLayers(preset);
     }
   },
   async created() {
@@ -417,6 +486,7 @@ export default {
         this.fetchUsers(),
         this.fetchPresets(),
         this.fetchPresetChannels(),
+        this.fetchPresetLayers(),
       ]);
     }
     catch(error) {
