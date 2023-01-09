@@ -391,6 +391,14 @@ export default {
         );
       });
 
+      let selectedLayers = this.$store.getters[this.imageModule + 'selectedLayers'];
+      let length = selectedLayers.length;
+
+      /* Remove loaded annotation layers */
+      for (let i = 0; i < length; i++) {
+        this.$store.dispatch(this.imageModule + 'removeLayer', 0);
+      }
+
       /* Load the preset of the annotation layers */
       this.presetLayers[preset.id].forEach(pl => {
         let layer = this.users.find(user => user.id === pl.user);
