@@ -148,6 +148,7 @@
 </template>
 
 <script>
+import {getAllTerms} from '@/utils/ontology-utils';
 import {get} from '@/utils/store-helpers';
 import {fullName} from '@/utils/user-utils.js';
 
@@ -157,10 +158,14 @@ import CalibrationModal from '@/components/image/CalibrationModal';
 import {
   Preset,
   PresetChannel,
+  PresetImage,
   PresetLayer,
+  PresetOntology,
   PresetCollection,
   PresetChannelCollection,
+  PresetImageCollection,
   PresetLayerCollection,
+  PresetOntologyCollection,
 } from 'cytomine-client';
 
 export default {
@@ -179,13 +184,16 @@ export default {
       isLastImage: false,
       users: [],
       presets: [],
+      presetImage: {},
       presetChannels: {},
       presetLayers: {},
+      presetOntologies: {},
       selectedPreset: null,
     };
   },
   computed: {
     currentUser: get('currentUser/user'),
+    ontology: get('currentProject/ontology'),
     project: get('currentProject/project'),
     viewerModule() {
       return this.$store.getters['currentProject/currentViewerModule'];
@@ -217,6 +225,15 @@ export default {
     availablePresets() {
       let userIds = this.presets.map(preset => preset.user);
       return this.users.filter(user => userIds.includes(user.id));
+    },
+    terms() {
+      return getAllTerms(this.ontology);
+    },
+    termsMapping() {
+      let mapping = {};
+      let terms = this.imageWrapper.style.terms;
+      terms.forEach((term, idx) => mapping[term.id] = idx);
+      return mapping;
     },
   },
   methods: {
@@ -331,7 +348,17 @@ export default {
       this.presets.forEach(preset => {
         this.presetChannels[preset.id] = [];
         this.presetLayers[preset.id] = [];
+        this.presetOntologies[preset.id] = [];
       });
+    },
+    async fetchPresetImage() {
+      let presetImage = (await PresetImageCollection.fetchAll({
+        filterKey: 'imageinstance',
+        filterValue: this.image.id,
+      })).array;
+
+      /* Filter the preset image by preset */
+      presetImage.forEach(pi => this.presetImage[pi.preset] = pi);
     },
     async fetchPresetChannels() {
       let presetChannels = (await PresetChannelCollection.fetchAll({
@@ -351,6 +378,15 @@ export default {
       /* Filter the preset layers by preset */
       presetLayers.forEach(pl => this.presetLayers[pl.preset].push(pl));
     },
+    async fetchPresetOntologies() {
+      let presetOntologies = (await PresetOntologyCollection.fetchAll({
+        filterKey: 'imageinstance',
+        filterValue: this.image.id,
+      })).array;
+
+      /* Filter the preset ontologies by preset */
+      presetOntologies.forEach(po => this.presetOntologies[po.preset].push(po));
+    },
     presetName(user) {
       let name = fullName(user);
       let id = (this.currentUser.isDeveloper) ? `(${this.$t('id')}: ${user.id})` : '';
@@ -363,6 +399,21 @@ export default {
       }
 
       let preset = this.presets.find(preset => preset.user === this.selectedPreset.id);
+      if (!(preset.id in this.presetImage)) {
+        return;
+      }
+
+      /* Load the preset of the image */
+      this.$store.dispatch(this.viewerModule + 'setRotation', {
+        index: this.index,
+        rotation: Number(this.presetImage[preset.id]['rotation']),
+      });
+
+      this.$store.dispatch(this.imageModule + 'setActiveSliceByPosition', {
+        channel: this.presetImage[preset.id]['c'],
+        zStack: this.presetImage[preset.id]['z'],
+        time: this.presetImage[preset.id]['t'],
+      });
 
       /* Load the preset of the channels of the image */
       this.presetChannels[preset.id].forEach(pc => {
@@ -408,6 +459,33 @@ export default {
         this.$store.commit(this.imageModule + 'setLayersOpacity', Number(pl.opacity));
         this.$store.dispatch(this.imageModule + 'addLayer', layer);
       });
+
+      /* Load the preset of the ontology */
+      for (let i = 0; i < this.terms.length; i++) {
+        let index = this.termsMapping[this.terms[i].id];
+        if (!this.presetOntologies[preset.id][i].visible) {
+          this.$store.dispatch(this.imageModule + 'toggleTermVisibility', index);
+        }
+
+        let opacity = this.presetOntologies[preset.id][i].opacity;
+        this.$store.commit(this.imageModule + 'setTermOpacity', {indexTerm: index, opacity});
+      }
+    },
+    async savePresetImage(preset) {
+      let currentSlice = this.imageWrapper.activeSlices[0];
+      let properties = {
+        image: this.image.id,
+        preset: preset.id,
+        rotation: this.imageWrapper.view.rotation,
+        c: currentSlice.channel,
+        z: currentSlice.zStack,
+        t: currentSlice.time,
+      };
+
+      /* Add id of preset image if it already exists in the data */
+      Object.assign(properties, {id: this.presetImage[preset.id]?.id});
+
+      this.presetImage[preset.id] = await new PresetImage(properties).save();
     },
     async savePresetChannels(preset) {
       /* Save the current configuration of each channel of the image */
@@ -469,6 +547,23 @@ export default {
       /* Remove the deleted layers from the data */
       this.presetLayers[preset.id] = this.presetLayers[preset.id].filter(pl => !toDelete.includes(pl));
     },
+    async savePresetOntology(preset) {
+      let termStyles = this.imageWrapper.style.terms;
+      for (let i = 0; i < this.terms.length; i++) {
+        let properties = {
+          image: this.image.id,
+          preset: preset.id,
+          term: this.terms[i].id,
+          opacity: termStyles[this.termsMapping[this.terms[i].id]].opacity,
+          visible: termStyles[this.termsMapping[this.terms[i].id]].visible,
+        };
+
+        /* Add id of preset ontology if it already exists in the data */
+        Object.assign(properties, {id: this.presetOntologies[preset.id][i]?.id});
+
+        this.presetOntologies[preset.id][i] = await new PresetOntology(properties).save();
+      }
+    },
     async savePreset() {
       let preset = this.presets.find(preset => preset.user === this.currentUser.id);
       if (!preset) {
@@ -482,10 +577,13 @@ export default {
         this.presets.push(preset);
         this.presetChannels[preset.id] = [];
         this.presetLayers[preset.id] = [];
+        this.presetOntologies[preset.id] = [];
       }
 
+      await this.savePresetImage(preset);
       await this.savePresetChannels(preset);
       await this.savePresetLayers(preset);
+      await this.savePresetOntology(preset);
     }
   },
   async created() {
@@ -493,8 +591,10 @@ export default {
       await Promise.all([
         this.fetchUsers(),
         this.fetchPresets(),
+        this.fetchPresetImage(),
         this.fetchPresetChannels(),
         this.fetchPresetLayers(),
+        this.fetchPresetOntologies(),
       ]);
     }
     catch(error) {
