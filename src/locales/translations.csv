@@ -1147,3 +1147,5 @@ button-load-preset,Load the preset,Charger les préréglages
 button-save-preset,Save my preset,Sauvergarder mes préréglages
 preset,Preset,Préréglage
 select-preset,Select a preset,Choisir un préréglage
+notif-success-preset-loaded,Preset successfully loaded,Préréglage a été chargé avec succès
+notif-success-preset-saved,Preset successfully saved,Préréglage a été sauvergardé avec succès

@@ -470,6 +470,8 @@ export default {
         let opacity = this.presetOntologies[preset.id][i].opacity;
         this.$store.commit(this.imageModule + 'setTermOpacity', {indexTerm: index, opacity});
       }
+
+      this.$notify({type: 'success', text: this.$t('notif-success-preset-loaded')});
     },
     async savePresetImage(preset) {
       let currentSlice = this.imageWrapper.activeSlices[0];
@@ -584,6 +586,8 @@ export default {
       await this.savePresetChannels(preset);
       await this.savePresetLayers(preset);
       await this.savePresetOntology(preset);
+
+      this.$notify({type: 'success', text: this.$t('notif-success-preset-saved')});
     }
   },
   async created() {
