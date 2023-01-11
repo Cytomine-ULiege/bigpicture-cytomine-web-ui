@@ -475,25 +475,22 @@ export default {
     },
     async savePresetImage(preset) {
       let currentSlice = this.imageWrapper.activeSlices[0];
-      let properties = {
+      this.presetImage[preset.id] = await new PresetImage({
+        id: this.presetImage[preset.id]?.id,
         image: this.image.id,
         preset: preset.id,
         rotation: this.imageWrapper.view.rotation,
         c: currentSlice.channel,
         z: currentSlice.zStack,
         t: currentSlice.time,
-      };
-
-      /* Add id of preset image if it already exists in the data */
-      Object.assign(properties, {id: this.presetImage[preset.id]?.id});
-
-      this.presetImage[preset.id] = await new PresetImage(properties).save();
+      }).save();
     },
     async savePresetChannels(preset) {
       /* Save the current configuration of each channel of the image */
       let apparentChannels = this.imageWrapper.colors.apparentChannels;
       for (let i = 0; i < apparentChannels.length; i++) {
-        let properties = {
+        this.presetChannels[preset.id][i] = await new PresetChannel({
+          id: this.presetChannels[preset.id][i]?.id,
           image: this.image.id,
           preset: preset.id,
           gamma: apparentChannels[i].gamma,
@@ -505,12 +502,7 @@ export default {
           logScale: this.imageWrapper.colors.histogramLogScale,
           visible: apparentChannels[i].visible,
           color: apparentChannels[i].color,
-        };
-
-        /* Add id of preset channel if it already exists in the data */
-        Object.assign(properties, {id: this.presetChannels[preset.id][i]?.id});
-
-        this.presetChannels[preset.id][i] = await new PresetChannel(properties).save();
+        }).save();
       }
     },
     async savePresetLayers(preset) {
@@ -552,18 +544,14 @@ export default {
     async savePresetOntology(preset) {
       let termStyles = this.imageWrapper.style.terms;
       for (let i = 0; i < this.terms.length; i++) {
-        let properties = {
+        this.presetOntologies[preset.id][i] = await new PresetOntology({
+          id: this.presetOntologies[preset.id][i]?.id,
           image: this.image.id,
           preset: preset.id,
           term: this.terms[i].id,
           opacity: termStyles[this.termsMapping[this.terms[i].id]].opacity,
           visible: termStyles[this.termsMapping[this.terms[i].id]].visible,
-        };
-
-        /* Add id of preset ontology if it already exists in the data */
-        Object.assign(properties, {id: this.presetOntologies[preset.id][i]?.id});
-
-        this.presetOntologies[preset.id][i] = await new PresetOntology(properties).save();
+        }).save();
       }
     },
     async savePreset() {
