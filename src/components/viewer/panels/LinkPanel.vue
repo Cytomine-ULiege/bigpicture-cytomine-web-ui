@@ -16,6 +16,17 @@
 <div>
   <h1>{{$t('link-images')}}</h1>
 
+  <b-field horizontal :label="$t('curtain')">
+    <b-select v-model="curtainImage" size="is-small" expanded>
+      <option :value="null">
+        {{$t('none')}}
+      </option>
+      <option v-for="image in unselectedCurtainImages" :key="image.id" :value="image">
+        {{ image.instanceFilename }}
+      </option>
+    </b-select>
+  </b-field>
+
   <b-field horizontal :label="$t('link-mode')">
     <b-select v-model="linkMode" size="is-small" expanded>
       <option v-for="option in modeOptions" :key="option.label" :value="option.key">
@@ -83,13 +94,11 @@ import ImageName from '@/components/image/ImageName';
 export default {
   name: 'link-panel',
   props: {
-    index: String
+    index: String,
+    images: Array,
   },
-  components: {ImageName},
-  data() {
-    return {
-      revisionNumber: 0
-    };
+  components: {
+    ImageName,
   },
   computed: {
     modeOptions: function () {
@@ -107,6 +116,9 @@ export default {
     viewerWrapper() {
       return this.$store.getters['currentProject/currentViewer'];
     },
+    imageWrapper() {
+      return this.viewerWrapper.images[this.index];
+    },
     linkMode: {
       get() {
         return this.viewerWrapper.linkMode;
@@ -115,20 +127,52 @@ export default {
         this.$store.commit(this.viewerModule + 'setLinkMode', mode);
       }
     },
-    images() {
+    curtainImage: {
+      get() {
+        return this.imageWrapper.curtainImage;
+      },
+      set(image) {
+        this.$store.commit(this.imageModule + 'setCurtainImage', image);
+      }
+    },
+    openedImages() {
       return this.viewerWrapper.images;
     },
     imagesWithNum() {
       let number = 1;
-      return Object.keys(this.images).reduce((obj, index) => {
+      return Object.keys(this.openedImages).reduce((obj, index) => {
         obj[index] = {
           number,
           index,
-          image: this.images[index].imageInstance
+          image: this.openedImages[index].imageInstance
         };
         number++;
         return obj;
       }, []);
+    },
+    unselectedCurtainImages() {
+      /* Take all the images currently opened in the viewer by default */
+      let unselectedImages = Object.values(this.openedImages).map(image => ({
+        id: image.imageInstance.id,
+        instanceFilename: image.imageInstance.instanceFilename
+      }));
+
+      /* Take all the images in the image group if it exists */
+      if (this.imageWrapper.imageGroup) {
+        unselectedImages = this.imageWrapper.imageGroup.imageInstances.map(image => ({
+          id: image.id,
+          instanceFilename: image.instanceFilename
+        }));
+      }
+
+      /* Add the path on the disk of the images */
+      unselectedImages.forEach(image => {
+        let imageInstance = this.images?.find(img => img.id === image.id);
+        image['path'] = imageInstance?.path;
+      });
+
+      /* Remove the current image from the available list of curtain images */
+      return unselectedImages.filter(image => image.id !== this.imageWrapper.imageInstance.id);
     },
     linkGroups() {
       return this.viewerWrapper.links;

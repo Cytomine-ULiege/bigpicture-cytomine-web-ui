@@ -51,6 +51,18 @@
         />
       </vl-layer-tile>
 
+      <vl-layer-tile :extent="extent" @mounted="addCurtainLayer" ref="curtainLayer">
+        <vl-source-zoomify
+          :projection="projectionName"
+          :urls="curtainLayerURLs"
+          :size="imageSize"
+          :extent="extent"
+          :crossOrigin="slices[0].imageServerUrl"
+          :transition="0"
+          :tile-size="tileSize"
+        />
+      </vl-layer-tile>
+
 <!--      <vl-layer-image>-->
 <!--        <vl-source-raster-->
 <!--          v-if="baseSource && colorManipulationOn"-->
@@ -106,7 +118,7 @@
             <a @click="togglePanel('link')" :class="{active: activePanel === 'link'}">
               <i class="fas fa-link"></i>
             </a>
-            <link-panel class="panel-options" v-show="activePanel === 'link'" :index="index" />
+            <link-panel class="panel-options" v-show="activePanel === 'link'" :index="index" :images="images" />
           </li>
 
           <li v-if="isPanelDisplayed('color-manipulation')">
@@ -156,7 +168,7 @@
       </ul>
     </div>
 
-    <image-controls :index="index" class="image-controls-wrapper" />
+    <image-controls :index="index" class="image-controls-wrapper" @updateCurtainImage="renderMap" />
 
     <div class="broadcast" v-if="imageWrapper.tracking.broadcast">
       <i class="fas fa-circle"></i> {{$t('live')}}
@@ -214,7 +226,14 @@ import {KeyboardPan, KeyboardZoom} from 'ol/interaction';
 import {noModifierKeys, targetNotEditable} from 'ol/events/condition';
 import WKT from 'ol/format/WKT';
 
-import {Annotation, AnnotationType, ImageConsultation, SliceInstance, UserPosition} from 'cytomine-client';
+import {
+  Annotation,
+  AnnotationType,
+  ImageConsultation,
+  ImageInstanceCollection,
+  SliceInstance,
+  UserPosition,
+} from 'cytomine-client';
 
 // import {constLib, operation} from '@/utils/color-manipulation.js';
 import constants from '@/utils/constants.js';
@@ -267,6 +286,7 @@ export default {
       overview: null,
 
       format: new WKT(),
+      images: [],
     };
   },
   computed: {
@@ -277,6 +297,7 @@ export default {
       return this.$route.query.action;
     },
     configUI: get('currentProject/configUI'),
+    project: get('currentProject/project'),
     viewerModule() {
       return this.$store.getters['currentProject/currentViewerModule'];
     },
@@ -400,6 +421,12 @@ export default {
       let slice = this.slices[0];
       return  [`${slice.imageServerUrl}/image/${slice.path}/normalized-tile/zoom/{z}/ti/{tileIndex}.jpg${this.baseLayerURLQuery}`];
     },
+    curtainLayerURLs() {
+      let slice = this.slices[0];
+      let path = this.imageWrapper.curtainImage ? this.imageWrapper.curtainImage.path : slice.path;
+      let query = this.imageWrapper.curtainImage ? '' : this.baseLayerURLQuery;
+      return [`${slice.imageServerUrl}/image/${path}/normalized-tile/zoom/{z}/ti/{tileIndex}.jpg${query}`];
+    },
 
     // colorManipulationOn() {
     //   return this.imageWrapper.colors.brightness !== 0
@@ -486,6 +513,10 @@ export default {
       }
     },
 
+    renderMap() {
+      this.$refs.map.$map.render();
+    },
+
     async updateKeyboardInteractions() {
       await this.$refs.map.$createPromise; // wait for ol.Map to be created
 
@@ -530,6 +561,24 @@ export default {
         collapsed: this.imageWrapper.view.overviewCollapsed
       });
       this.$refs.map.$map.addControl(this.overview);
+    },
+
+    swipeCurtain(context) {
+      let width = context.canvas.width * (this.imageWrapper.style.curtainPosition);
+      context.save();
+      context.beginPath();
+      context.rect(width, 0, context.canvas.width - width, context.canvas.height);
+      context.clip();
+    },
+
+    async addCurtainLayer() {
+      await this.$refs.map.$createPromise; // wait for ol.Map to be created
+      await this.$refs.curtainLayer.$createPromise; // wait for ol.Layer to be created
+
+      /* https://openlayers.org/en/v5.3.0/examples/layer-swipe.html?q=swipe */
+
+      this.$refs.curtainLayer.$on('precompose', event => this.swipeCurtain(event.context));
+      this.$refs.curtainLayer.$on('postcompose', event => event.context.restore());
     },
 
     toggleOverview() {
@@ -698,6 +747,11 @@ export default {
     }
   },
   async created() {
+    this.images = (await ImageInstanceCollection.fetchAll({
+      filterKey: 'project',
+      filterValue: this.project.id,
+    })).array;
+
     if(!getProj(this.projectionName)) { // if image opened for the first time
       let projection = createProj({code: this.projectionName, units: 'pixels', extent: this.extent});
       addProj(projection);
@@ -996,5 +1050,22 @@ $colorOpenedPanelLink: #6c95c8;
   right: $widthPanelBar;
   z-index: 40;
   pointer-events: none;
+}
+
+/* ----- Curtain image ----- */
+.curtain-wrapper {
+  position: absolute;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 0 1px #777;
+  padding: 0.5rem;
+  bottom: 1.5em;
+  left: 20%;
+  width: 55%;
+  z-index: 40;
+}
+
+.curtain-wrapper input[type="range"].slider {
+  margin: 0;
 }
 </style>
