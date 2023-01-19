@@ -75,6 +75,14 @@
         <td v-else>{{$t('unknown')}}</td>
       </tr>
       <tr>
+        <td><strong>{{ $t('image-metadata') }}</strong></td>
+        <td>
+          <button class="button is-small" @click="isMetadataModalActive = true">
+            {{ $t('button-metadata') }}
+          </button>
+        </td>
+      </tr>
+      <tr>
         <td><strong>{{$t('preset')}}</strong></td>
         <td>
           <b-field>
@@ -145,6 +153,11 @@
     :active.sync="calibrationModal"
     @setResolution="setResolution"
   />
+
+  <image-metadata-modal
+    :active.sync="isMetadataModalActive"
+    :image="image"
+  />
 </div>
 </template>
 
@@ -153,6 +166,7 @@ import {getAllTerms} from '@/utils/ontology-utils';
 import {get} from '@/utils/store-helpers';
 import {fullName} from '@/utils/user-utils.js';
 
+import ImageMetadataModal from '@/components/image/ImageMetadataModal';
 import ImageName from '@/components/image/ImageName';
 import CalibrationModal from '@/components/image/CalibrationModal';
 
@@ -173,6 +187,7 @@ import {
 export default {
   name: 'information-panel',
   components: {
+    ImageMetadataModal,
     ImageName,
     CalibrationModal
   },
@@ -184,6 +199,7 @@ export default {
       calibrationModal: false,
       isFirstImage: false,
       isLastImage: false,
+      isMetadataModalActive: false,
       users: [],
       presets: [],
       presetImage: {},
