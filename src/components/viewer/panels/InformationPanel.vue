@@ -75,6 +75,14 @@
         <td v-else>{{$t('unknown')}}</td>
       </tr>
       <tr>
+        <td><strong>{{ $t('image-metadata') }}</strong></td>
+        <td>
+          <button class="button is-small" @click="isMetadataModalActive = true">
+            {{ $t('button-metadata') }}
+          </button>
+        </td>
+      </tr>
+      <tr>
         <td colspan="2" class="actions">
           <div class="buttons">
             <button v-if="canEdit" class="button is-small" @click="calibrationModal = true">
@@ -121,17 +129,24 @@
     :active.sync="calibrationModal"
     @setResolution="setResolution"
   />
+
+  <image-metadata-modal
+    :active.sync="isMetadataModalActive"
+    :image="image"
+  />
 </div>
 </template>
 
 <script>
 import {get} from '@/utils/store-helpers';
+import ImageMetadataModal from '@/components/image/ImageMetadataModal';
 import ImageName from '@/components/image/ImageName';
 import CalibrationModal from '@/components/image/CalibrationModal';
 
 export default {
   name: 'information-panel',
   components: {
+    ImageMetadataModal,
     ImageName,
     CalibrationModal
   },
@@ -142,7 +157,8 @@ export default {
     return {
       calibrationModal: false,
       isFirstImage: false,
-      isLastImage: false
+      isLastImage: false,
+      isMetadataModalActive: false,
     };
   },
   computed: {
