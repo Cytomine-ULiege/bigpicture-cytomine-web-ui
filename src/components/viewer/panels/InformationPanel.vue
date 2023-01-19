@@ -94,6 +94,7 @@
           <div class="buttons">
             <button class="button is-small" @click="savePreset()">{{$t('button-save-preset')}}</button>
             <button class="button is-small" @click="loadPreset()">{{$t('button-load-preset')}}</button>
+            <button class="button is-small" @click="reset()">{{$t('button-reset')}}</button>
           </div>
         </td>
       </tr>
@@ -166,6 +167,7 @@ import {
   PresetImageCollection,
   PresetLayerCollection,
   PresetOntologyCollection,
+  ProjectDefaultLayerCollection,
 } from 'cytomine-client';
 
 export default {
@@ -189,6 +191,7 @@ export default {
       presetLayers: {},
       presetOntologies: {},
       selectedPreset: null,
+      defaultLayers: [],
     };
   },
   computed: {
@@ -348,6 +351,12 @@ export default {
     async fetchUsers() {
       this.users = (await this.project.fetchUserLayers()).array;
     },
+    async fetchDefaultLayers() {
+      this.defaultLayers = await ProjectDefaultLayerCollection.fetchAll({
+        filterKey: 'project',
+        filterValue: this.project.id
+      });
+    },
     async fetchPresets() {
       this.presets = (await PresetCollection.fetchAll({
         filterKey: 'project',
@@ -402,6 +411,42 @@ export default {
       let id = (this.currentUser.isDeveloper) ? `(${this.$t('id')}: ${user.id})` : '';
 
       return `${name} ${id}`;
+    },
+    reset() {
+      this.$store.dispatch(this.viewerModule + 'setRotation', {
+        index: this.index,
+        rotation: 0
+      });
+
+      this.$store.commit(this.imageModule + 'resetApparentChannels');
+
+      /* Remove all the annotation layers */
+      let selectedLayers = this.$store.getters[this.imageModule + 'selectedLayers'];
+      let length = selectedLayers.length;
+
+      for (let i = 0; i < length; i++) {
+        this.$store.dispatch(this.imageModule + 'removeLayer', 0);
+      }
+
+      /* Reset to the default layers */
+      this.defaultLayers.forEach(defaultLayer => {
+        let layer = this.users.find(user => user.id === defaultLayer.user);
+        layer.visible = true;
+        this.$store.dispatch(this.imageModule + 'addLayer', layer);
+      });
+
+      /* Reset the ontology */
+      let termStyles = this.imageWrapper.style.terms;
+      for (let i = 0; i < this.terms.length; i++) {
+        let index = this.termsMapping[this.terms[i].id];
+        if (!termStyles[this.termsMapping[this.terms[i].id]].visible) {
+          this.$store.dispatch(this.imageModule + 'toggleTermVisibility', index);
+        }
+
+        this.$store.commit(this.imageModule + 'resetTermOpacities');
+      }
+
+      this.$notify({type: 'success', text: this.$t('notif-sucess-reset-preset')});
     },
     loadPreset() {
       if (!this.selectedPreset) {
@@ -592,6 +637,7 @@ export default {
     try {
       await Promise.all([
         this.fetchUsers(),
+        this.fetchDefaultLayers(),
         this.fetchPresets(),
         this.fetchPresetImage(),
         this.fetchPresetChannels(),

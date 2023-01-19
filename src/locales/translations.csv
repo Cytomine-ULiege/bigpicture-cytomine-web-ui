@@ -1149,5 +1149,6 @@ preset,Preset,Préréglage
 select-preset,Select a preset,Choisir un préréglage
 notif-success-preset-loaded,Preset successfully loaded,Préréglage a été chargé avec succès
 notif-success-preset-saved,Preset successfully saved,Préréglage a été sauvergardé avec succès
+notif-sucess-reset-preset,Reset to default values,Réinitialisation aux valeurs par défaut
 curtain,Curtain,Rideau
 select-curtain-image,Select the curtain image,Choisir l'image rideau
