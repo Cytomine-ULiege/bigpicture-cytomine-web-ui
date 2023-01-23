@@ -77,7 +77,7 @@
       <tr>
         <td><strong>{{ $t('image-metadata') }}</strong></td>
         <td>
-          <button class="button is-small" @click="isMetadataModalActive = true">
+          <button class="button is-small" @click="$emit('openMetadata')">
             {{ $t('button-metadata') }}
           </button>
         </td>
@@ -129,24 +129,17 @@
     :active.sync="calibrationModal"
     @setResolution="setResolution"
   />
-
-  <image-metadata-modal
-    :active.sync="isMetadataModalActive"
-    :image="image"
-  />
 </div>
 </template>
 
 <script>
 import {get} from '@/utils/store-helpers';
-import ImageMetadataModal from '@/components/image/ImageMetadataModal';
 import ImageName from '@/components/image/ImageName';
 import CalibrationModal from '@/components/image/CalibrationModal';
 
 export default {
   name: 'information-panel',
   components: {
-    ImageMetadataModal,
     ImageName,
     CalibrationModal
   },
@@ -158,7 +151,6 @@ export default {
       calibrationModal: false,
       isFirstImage: false,
       isLastImage: false,
-      isMetadataModalActive: false,
     };
   },
   computed: {
