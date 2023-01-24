@@ -128,4 +128,8 @@ a {
   max-width: 60em;
   max-height: 30em;
 }
+
+.table th {
+  width: 1%;
+}
 </style>
