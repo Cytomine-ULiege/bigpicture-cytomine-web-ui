@@ -125,7 +125,9 @@ a {
   display: block;
   overflow-x: scroll;
   overflow-y: scroll;
+  min-width: 30em;
   max-width: 60em;
+  min-height: 30em;
   max-height: 30em;
 }
 
