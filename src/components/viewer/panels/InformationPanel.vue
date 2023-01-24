@@ -387,6 +387,15 @@ export default {
 
       /* Filter the preset image by preset */
       presetImage.forEach(pi => this.presetImage[pi.preset] = pi);
+
+      /* Remove the preset profiles that have no presets for this image */
+      let filteredPresets = [];
+      this.presets.forEach(p => {
+        if (p.id in this.presetImage) {
+          filteredPresets.push(p);
+        }
+      });
+      this.presets = filteredPresets;
     },
     async fetchPresetChannels() {
       let presetChannels = (await PresetChannelCollection.fetchAll({
@@ -583,7 +592,7 @@ export default {
           image: this.image.id,
           preset: preset.id,
           user: layer.id,
-          opacity: this.imageWrapper.style.opacity,
+          opacity: this.imageWrapper.style.layersOpacity,
           drawOn: layer.drawOn,
           visible: layer.visible,
         }).save();
