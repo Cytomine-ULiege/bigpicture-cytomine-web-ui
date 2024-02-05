@@ -2,7 +2,7 @@
   <div class="similar-annotations-playground">
     <vue-draggable-resizable
       class="draggable"
-      v-show="displayAnnotDetails"
+      v-show="displayAnnotDetails && selectedFeature && showSimilarAnnotations"
       :parent="false"
       :resizable="false"
       :x="350"
@@ -15,7 +15,7 @@
       <div class="actions">
         <h1>{{ $t('similar-annotations') }}</h1>
 
-        <button class="button is-small close" @click="hideSimilarAnnotations()">
+        <button class="button is-small close" @click="showSimilarAnnotations = false">
           <i class="fas fa-times"/>
         </button>
       </div>
@@ -73,7 +73,6 @@ export default {
     VueDraggableResizable,
   },
   props: {
-    data: {type: Object},
     image: {type: Object},
     index: {type: String},
     size: {type: Number, default: 64},
@@ -95,8 +94,22 @@ export default {
     imageWrapper() {
       return this.$store.getters['currentProject/currentViewer'].images[this.index];
     },
+    showSimilarAnnotations: {
+      get() {
+        return this.imageWrapper.selectedFeatures.showSimilarAnnotations;
+      },
+      set(value) {
+        this.$store.commit(this.imageModule + 'setShowSimilarAnnotations', value);
+      }
+    },
+    data() {
+      return this.imageWrapper.selectedFeatures.similarAnnotations;
+    },
     displayAnnotDetails() {
       return this.imageWrapper.selectedFeatures.displayAnnotDetails;
+    },
+    selectedFeature() {
+      return this.$store.getters[this.imageModule + 'selectedFeature'];
     },
     similarities() {
       let similarities = [];
@@ -144,9 +157,6 @@ export default {
     },
     findTerm(id) {
       return this.terms.find((term) => term.id === Number(id));
-    },
-    hideSimilarAnnotations() {
-      this.$eventBus.$emit('hide-similar-annotations');
     },
     async fetchAnnotations() {
       await Promise.all(this.data['filenames'].map(async (id) => {

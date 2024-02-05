@@ -161,7 +161,7 @@
         <tr>
           <td colspan="2">
             <h5>{{ $t('similar-annotations') }}</h5>
-            <button class="button is-small is-fullwidth" @click="searchSimilarAnnotations">
+            <button class="button is-small is-fullwidth" @click="$emit('searchSimilarAnnotations')">
               {{ $t('search-similar-annotation') }}
             </button>
           </td>
@@ -259,7 +259,7 @@
 <script>
 import {get} from '@/utils/store-helpers';
 
-import {AnnotationTerm, AnnotationType, AnnotationCommentCollection, AnnotationTrack, Cytomine} from 'cytomine-client';
+import {AnnotationTerm, AnnotationType, AnnotationCommentCollection, AnnotationTrack} from 'cytomine-client';
 import copyToClipboard from 'copy-to-clipboard';
 import ImageName from '@/components/image/ImageName';
 import CytomineDescription from '@/components/description/CytomineDescription';
@@ -537,15 +537,6 @@ export default {
     addProp(prop) {
       this.properties.push(prop);
     },
-
-    async searchSimilarAnnotations() {
-      let data = (await Cytomine.instance.api.get(
-        'retrieval/retrieve.json',
-        {params: {annotation: this.annotation.id, nrt_neigh: 10}}
-      )).data;
-
-      this.$eventBus.$emit('show-similar-annotations', data);
-    }
   },
   async created() {
     if(this.isPropDisplayed('comments') && [AnnotationType.ALGO, AnnotationType.USER].includes(this.annotation.type)) {

@@ -14,7 +14,6 @@
 
     <similar-annotation
       v-if="showSimilarAnnotations"
-      :data="similarData"
       :image="image"
       :index="index"
       @select="selectAnnotation"
@@ -40,8 +39,6 @@ export default {
   data() {
     return {
       format: new WKT(),
-      showSimilarAnnotations: false,
-      similarData: null,
     };
   },
   components: {
@@ -62,6 +59,9 @@ export default {
     image() {
       return this.imageWrapper.imageInstance;
     },
+    showSimilarAnnotations() {
+      return this.imageWrapper.selectedFeatures.showSimilarAnnotations;
+    }
   },
   methods: {
     isPanelDisplayed(panel) {
@@ -97,6 +97,10 @@ export default {
     selectAnnotation({annot, options}) {
       let index = (options.trySameView) ? this.index : null;
       this.$eventBus.$emit('selectAnnotation', {index, annot, center: true});
+
+      if (this.image.id !== annot.image) {
+        this.$store.commit(this.imageModule + 'clearSimilarAnnotations');
+      }
     },
 
     centerView({annot, sameView = false}) {
@@ -108,18 +112,8 @@ export default {
       }
     }
   },
-  mounted() {
-    this.$eventBus.$on('hide-similar-annotations', () => {
-      this.showSimilarAnnotations = false;
-    });
-    this.$eventBus.$on('show-similar-annotations', (data) => {
-      this.showSimilarAnnotations = true;
-      this.similarData = data;
-    });
-  },
   beforeDestroy() {
-    this.$eventBus.$off('hide-similar-annotations');
-    this.$eventBus.$off('show-similar-annotations');
+    this.$store.commit(this.imageModule + 'setShowSimilarAnnotations', false);
   }
 };
 </script>
