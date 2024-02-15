@@ -237,7 +237,6 @@
             <div class="column is-half" v-for="format in selectedFormats" :key="format">
               <metadata-filter
                 :format="format"
-                :image-ids="aiIDs[format]"
                 :keys="metadataKeys[format]"
                 :max="metadataMax"
                 :type="metadataType"
@@ -336,7 +335,7 @@
 <script>
 import {stripIDfromKey} from '@/utils/metadata.js';
 import {get} from '@/utils/store-helpers';
-import {isNumeric} from '@/utils/string-utils';
+import {encodeObject, isNumeric} from '@/utils/string-utils';
 
 import {
   AbstractImage,
@@ -392,9 +391,9 @@ export default {
       boundsHeight: [],
       boundsWidth: [],
       createModal: false,
-      filteredImageIDs: {},
-      filtersOpened: false,
       filteredProjects: {},
+      filters: {},
+      filtersOpened: false,
       maxHeight: 100,
       maxWidth: 100,
       metadataKeys: {},
@@ -428,13 +427,6 @@ export default {
   computed: {
     currentUser: get('currentUser/user'),
     shortTermToken: get('currentUser/shortTermToken'),
-    aiIDs() {
-      let ids = {};
-      this.availableFormats.forEach(format => ids[format] = []);
-      this.abstractImages.forEach(ai => ids[ai.contentType].push(ai.id));
-
-      return ids;
-    },
     finishedStatus() {
       return [
         UploadedFileStatus.CONVERTED,
@@ -522,15 +514,9 @@ export default {
         }
       }
 
-      let filteredIDs = [];
-      this.selectedFormats.forEach(format => {
-        filteredIDs = filteredIDs.concat(this.filteredImageIDs[format]);
-      });
-      if (filteredIDs.length > 0) {
-        collection['include'] = {
-          in: filteredIDs.join(',')
-        };
-      }
+      collection['filters'] = {
+        filter: this.filters
+      };
 
       return collection;
     }
@@ -569,23 +555,13 @@ export default {
       this.boundsHeight = this.boundsHeight[1] === oldMaxHeight ? [0, this.maxHeight] : this.boundsHeight;
       this.boundsWidth = this.boundsWidth[1] === oldMaxWidth ? [0, this.maxWidth] : this.boundsWidth;
 
-      if (!this.availableFormats.includes(ai.contentType)) {
-        this.availableFormats.push(ai.contentType);
-        this.$set(this.filteredImageIDs, ai.contentType, []);
-      }
-      this.abstractImages.push(ai);
-
+      this.availableFormats.includes(ai.contentType) || this.availableFormats.push(ai.contentType);
       if ((this.availableFormats.length-1) === this.selectedFormats.length) {
         this.selectedFormats.push(ai.contentType);
       }
-      if (this.selectedFormats.includes(ai.contentType)) {
-        this.filteredImageIDs[ai.contentType].push(ai.id);
-      }
 
       let magnification = this.getMagnification(ai.magnification);
-      if (!this.availableMagnifications.includes(magnification)) {
-        this.availableMagnifications.push(magnification);
-      }
+      this.availableMagnifications.includes(magnification) || this.availableMagnifications.push(magnification);
       if ((this.availableMagnifications.length-1) === this.selectedMagnifications.length) {
         this.selectedMagnifications.push(magnification);
       }
@@ -699,7 +675,6 @@ export default {
           this.availableVendors.push(vendorFormatted);
         }
 
-        this.filteredImageIDs[format] = [];
         this.metadataKeys[format] = [];
       });
 
@@ -714,8 +689,6 @@ export default {
         aiToImages[ai.id] = (await Cytomine.instance.api.get(
           `abstractimage/${ai.id}/imageinstance.json`
         )).data.collection;
-
-        this.filteredImageIDs[ai.contentType].push(ai.id);
       }));
 
       for (const [key, value] of Object.entries(aiToImages)) {
@@ -915,9 +888,13 @@ export default {
       this.searchString = value;
     }, 500),
 
-    includeImageIDs(format, imageIDs) {
-      this.$delete(this.filteredImageIDs, format);
-      this.$set(this.filteredImageIDs, format, imageIDs);
+    updateFilters(format, filters) {
+      if (_.isEmpty(filters)) {
+        this.$delete(this.filters, format);
+      }
+      else {
+        this.$set(this.filters, format, Object.assign({}, this.filters[format], encodeObject(filters)));
+      }
     }
   },
   activated() {
@@ -929,13 +906,13 @@ export default {
     this.refreshStatusSessionUploads();
     this.tableRefreshInterval = constants.STORAGE_REFRESH_INTERVAL;
 
-    this.$eventBus.$on('includeImageIDs', this.includeImageIDs);
+    this.$eventBus.$on('update-filters', this.updateFilters);
   },
   deactivated() {
     clearTimeout(this.timeoutRefreshSessionUploads);
     this.tableRefreshInterval = 0;
 
-    this.$eventBus.$off('includeImageIDs', this.includeImageIDs);
+    this.$eventBus.$off('update-filters', this.updateFilters);
   },
 };
 </script>

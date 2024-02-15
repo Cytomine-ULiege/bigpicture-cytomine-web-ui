@@ -54,7 +54,6 @@
       <metadata-search
         v-if="filtersOpened"
         :formats="availableFormats"
-        :image-ids="imageIds"
         :magnifications="availableMagnifications"
         :max-height="maxHeight"
         :max-width="maxWidth"
@@ -150,6 +149,7 @@
 
 <script>
 import {get, sync, syncMultiselectFilter, syncBoundsFilter} from '@/utils/store-helpers';
+import {encodeObject} from '@/utils/string-utils';
 
 import CytomineTable from '@/components/utils/CytomineTable';
 import MetadataSearch from '@/components/search/MetadataSearch';
@@ -160,6 +160,7 @@ import vendorFromFormat from '@/utils/vendor';
 
 import {ImageInstanceCollection, PropertyCollection, TagCollection} from 'cytomine-client';
 import ImageThumbnail from '@/components/image/ImageThumbnail';
+import _ from 'lodash';
 
 // store options to use with store helpers to target projects/currentProject/listImages module
 const storeOptions = {rootModuleProp: 'storeModule'};
@@ -183,7 +184,7 @@ export default {
       error: false,
       images: [],
       metadata: {},
-      filteredImageIDs: [],
+      filters: {},
       addImageModal: false,
       excludedProperties: [
         'overview',
@@ -300,29 +301,11 @@ export default {
         }
       }
 
-      let filteredIDs = [];
-      this.selectedFormats.forEach(format => filteredIDs = filteredIDs.concat(this.filteredImageIDs[format]));
-      if (filteredIDs.length === 0) {
-        for (let ids of Object.values(this.filteredImageIDs)) {
-          filteredIDs = filteredIDs.concat(ids);
-        }
-      }
-
-      if (filteredIDs.length > 0) {
-        collection['include'] = {
-          in: filteredIDs.join(',')
-        };
-      }
+      collection['filters'] = {
+        filter: this.filters
+      };
 
       return collection;
-    },
-
-    imageIds() {
-      let ids = {};
-      this.availableFormats.forEach(format => ids[format] = []);
-      this.images.forEach(image => ids[image.contentType].push(image.baseImage));
-
-      return ids;
     },
 
     nbActiveFilters() {
@@ -360,8 +343,6 @@ export default {
         if (!this.availableVendors.find(vendor => vendor.value === vendorFormatted.value)) {
           this.availableVendors.push(vendorFormatted);
         }
-
-        this.filteredImageIDs[format] = [];
       });
 
       this.availableMagnifications = stats.magnification.list.map(m => {
@@ -395,7 +376,6 @@ export default {
         }
 
         this.metadata[image.contentType][image.id] = properties;
-        this.filteredImageIDs[image.contentType].push(image.baseImage);
       }));
     },
 
@@ -420,9 +400,13 @@ export default {
     isPropDisplayed(prop) {
       return this.excludedProperties.includes(prop) && (this.configUI[`project-explore-image-${prop}`] == null || this.configUI[`project-explore-image-${prop}`]);
     },
-    includeImageIDs(format, imageIDs) {
-      this.$delete(this.filteredImageIDs, format);
-      this.$set(this.filteredImageIDs, format, imageIDs);
+    updateFilters(format, filters) {
+      if (_.isEmpty(filters)) {
+        this.$delete(this.filters, format);
+      }
+      else {
+        this.$set(this.filters, format, Object.assign({}, this.filters[format], encodeObject(filters)));
+      }
     }
   },
   watch: {
@@ -457,10 +441,10 @@ export default {
     }
   },
   mounted() {
-    this.$eventBus.$on('includeImageIDs', this.includeImageIDs);
+    this.$eventBus.$on('update-filters', this.updateFilters);
   },
   beforeDestroy() {
-    this.$eventBus.$off('includeImageIDs', this.includeImageIDs);
+    this.$eventBus.$off('update-filters', this.updateFilters);
   }
 };
 </script>

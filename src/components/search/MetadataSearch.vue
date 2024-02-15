@@ -115,7 +115,6 @@
       <div class="column is-half" v-for="format in selectedFormats" :key="format">
         <metadata-filter
           :format="format"
-          :image-ids="imageIds[format]"
           :keys="metadataKeys[format]"
           :max="metadataMax"
           :type="metadataType"
@@ -148,7 +147,6 @@ export default {
   },
   props: {
     formats: {type: Array, default: []},
-    imageIds: {type: Object, default: null},
     magnifications: {type: Array, default: []},
     maxHeight: {type: Number, default: 0},
     maxWidth: {type: Number, default: 0},

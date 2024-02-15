@@ -61,3 +61,12 @@ export function isDate(str) {
 export function isNumeric(str) {
   return !isNaN(str);
 }
+
+export function encodeObject(obj) {
+  let encoded = {}
+  for (const [key, value] of Object.entries(obj)) {
+    encoded[encodeURIComponent(key)] = encodeURIComponent(value);
+  }
+
+  return encoded;
+}

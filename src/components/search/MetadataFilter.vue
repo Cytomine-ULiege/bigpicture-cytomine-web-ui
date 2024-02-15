@@ -101,7 +101,6 @@ export default {
   },
   props: {
     format: {type: String, default: ''},
-    imageIds: {type: Array, default: []},
     keys: {type: Array, default: []},
     max: {type: Object, default: {}},
     type: {type: Object, default: {}},
@@ -132,7 +131,7 @@ export default {
         this.currentValue = value;
         this.$store.commit(
           'currentProject/setCurrentMetadataSearch',
-          {format: this.format, key: this.currentKey, searchValue: value},
+          {format: this.format, key: this.currentKey, searchValue: value, type: this.type[this.currentKey]},
         );
       }
     },
@@ -156,32 +155,22 @@ export default {
         {params: {key: this.currentKey, searchTerm: encodeURI(this.searchValue)}}
       )).data['collection'];
     },
-    async removeFilter(key) {
+    removeFilter(key) {
       this.$store.commit(
         'currentProject/removeMetadataFilter',
         {format: this.format, key},
       );
 
-      await this.searchImage();
+      this.searchImage();
       this.$forceUpdate();
     },
-    async searchImage() {
+    searchImage() {
       if (this.searchValue) {
         this.filters = this.searchValue;
         this.searchValue = '';
       }
 
-      let filteredImageIds = this.imageIds;
-      if (Object.keys(this.filters).length) {
-        let data = {
-          'filters': this.filters,
-          'imageIds': this.imageIds,
-        };
-
-        filteredImageIds = (await Cytomine.instance.api.post('search.json', data)).data['collection'];
-      }
-
-      this.$eventBus.$emit('includeImageIDs', this.format, filteredImageIds);
+      this.$eventBus.$emit('update-filters', this.format, this.filters);
     }
   },
   watch: {
