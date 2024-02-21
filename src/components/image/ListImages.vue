@@ -405,7 +405,7 @@ export default {
         this.$delete(this.filters, format);
       }
       else {
-        this.$set(this.filters, format, Object.assign({}, this.filters[format], encodeObject(filters)));
+        this.$set(this.filters, format, encodeObject(filters));
       }
     }
   },
