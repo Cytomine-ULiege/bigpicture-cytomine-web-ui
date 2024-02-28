@@ -122,6 +122,7 @@
       </div>
     </div>
 
+    total hits: {{ totalHits }}
   </div>
 </template>
 
@@ -156,6 +157,7 @@ export default {
     metadata: {type: Object, default: null},
     resolutions: {type: Array, default: []},
     tags: {type: Array, default: []},
+    totalHits: {type: Number, default: 0},
     vendors: {type: Array, default: []},
   },
   data() {

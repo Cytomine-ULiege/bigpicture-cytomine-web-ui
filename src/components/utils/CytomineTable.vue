@@ -186,6 +186,7 @@ export default {
 
         this.$emit('update:checkedRows', this.internalCheckedRows);
         this.$emit('update:data', data);
+        this.$emit('update:total', this.total);
       }
       catch(error) {
         if(this.internalCurrentPage > 1) { // error may be due to the page number (not enough elements) => retry on first page

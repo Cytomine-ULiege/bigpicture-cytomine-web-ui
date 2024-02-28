@@ -63,6 +63,7 @@
         :metadata="metadata"
         :resolutions="availableResolutions"
         :tags="availableTags"
+        :totalHits="totalHits"
         :vendors="availableVendors"
       />
 
@@ -75,6 +76,7 @@
         :sort.sync="sortField"
         :order.sync="sortOrder"
         :revision="revision"
+        @update:total="totalHits = $event"
       >
         <template #default="{row: image}">
           <b-table-column :label="$t('overview')" width="100" :visible="isPropDisplayed('overview')">
@@ -205,7 +207,8 @@ export default {
       maxNbUserAnnotations: 100,
       maxNbJobAnnotations: 100,
       maxNbReviewedAnnotations: 100,
-      revision: 0
+      revision: 0,
+      totalHits: 0,
     };
   },
   computed: {
