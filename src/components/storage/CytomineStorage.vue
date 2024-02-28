@@ -243,6 +243,8 @@
               />
             </div>
           </div>
+
+          total hits : {{ totalHits }}
         </div>
 
         <div class="buttons button-add is-right">
@@ -258,6 +260,7 @@
         :revision="revision"
         :refreshInterval="tableRefreshInterval"
         :openedDetailed.sync="openedDetails"
+        @update:total="totalHits = $event"
       >
         <template #default="{row: uFile}">
           <b-table-column :label="$t('preview')" width="80" class="image-overview">
@@ -406,6 +409,7 @@ export default {
       selectedMagnifications: [],
       selectedProjectsToLink: {},
       selectedVendors: [],
+      totalHits: 0,
 
       storages: [],
       selectedStorage: null,
