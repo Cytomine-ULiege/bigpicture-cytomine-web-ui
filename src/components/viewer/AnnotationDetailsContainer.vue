@@ -195,7 +195,7 @@ export default {
     },
     async searchSimilarAnnotations() {
       let data = (await Cytomine.instance.api.get(
-        'retrieval/retrieve.json',
+        'retrieval/search',
         {params: {annotation: this.selectedFeature.properties.annot.id, nrt_neigh: 10}}
       )).data;
 
