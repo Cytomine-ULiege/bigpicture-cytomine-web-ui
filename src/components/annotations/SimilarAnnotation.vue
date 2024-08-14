@@ -112,16 +112,10 @@ export default {
       return this.$store.getters[this.imageModule + 'selectedFeature'];
     },
     similarities() {
-      let similarities = [];
-
-      for (let i = 0; i < this.annotations.length; i++) {
-        similarities.push({
-          annotation: this.annotations[i],
-          distance: this.data['similarities'][i][1]
-        });
-      }
-
-      return similarities;
+      return this.annotations.map((annotation, index) => ({
+        annotation,
+        distance: this.data.similarities[index][1]
+      }));
     },
     terms() {
       return this.$store.getters['currentProject/terms'] || [];
