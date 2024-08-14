@@ -34,7 +34,7 @@
           />
 
           <div>
-            {{ data.distance.toFixed(2) }}
+            {{ data.distance.toFixed(2) }}%
           </div>
         </div>
       </div>
