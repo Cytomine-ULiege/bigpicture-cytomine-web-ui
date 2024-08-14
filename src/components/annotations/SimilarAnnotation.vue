@@ -117,7 +117,7 @@ export default {
       for (let i = 0; i < this.annotations.length; i++) {
         similarities.push({
           annotation: this.annotations[i],
-          distance: this.data['distances'][i]
+          distance: this.data['similarities'][i][1]
         });
       }
 
@@ -159,7 +159,7 @@ export default {
       return this.terms.find((term) => term.id === Number(id));
     },
     async fetchAnnotations() {
-      await Promise.all(this.data['filenames'].map(async (id) => {
+      await Promise.all(this.data['similarities'].map(async ([id, _]) => {
         this.annotations.push(await Annotation.fetch(id));
       }));
     }
