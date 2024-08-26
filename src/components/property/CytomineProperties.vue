@@ -54,7 +54,7 @@
 </template>
 
 <script>
-import {Property, PropertyCollection} from 'cytomine-client';
+import {Property} from 'cytomine-client';
 import constants from '@/utils/constants.js';
 
 export default {
@@ -91,6 +91,8 @@ export default {
         // In a future and longer refactor, add, editing and removing should simply send events to the parent
         // Or dispatch an action that would trigger an "effect" on the store...
         this.$emit('deleted', prop);
+        // For PropertiesPanel update
+        this.$emit('updateProperties');
       }
       catch(error) {
         console.log(error);
@@ -124,6 +126,8 @@ export default {
         // Or dispatch an action that would trigger an "effect" on the store...
           this.$emit('added', prop);
         }
+        // For PropertiesPanel update
+        this.$emit('updateProperties');
       }
       catch(error) {
         console.log(error);

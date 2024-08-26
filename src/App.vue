@@ -138,9 +138,17 @@ export default {
     await axios
       .get('meta-prefixes.json')
       .then(response => {
-        constants.METADATA_PREFIXES = response.data
+        constants.METADATA_PREFIXES = response.data;
       });
     
+    const PREFIXES = [
+      'APERIO', 'TIFF', 'HAMAMATSU', 'OPENSLIDE', 'EXIF', 'LEICA', 'JFIF', 'FILE',
+      'PNG', 'XMP', 'VENTANA', 'DICOM', 'ISYNTAX', 'VSI', 'MIRAX', 'ICC_PROFILE', 'MSMDAD'
+    ];
+    PREFIXES.forEach(prefix => {
+      this.$set(constants.METADATA_PREFIXES, prefix, prefix);
+    });
+
     for (let i in settings) {
       if (Object.prototype.hasOwnProperty.call(constants, i)
         || i.includes('_NAMESPACE') || i.includes('_VERSION') || i.includes('_ENABLED')) {

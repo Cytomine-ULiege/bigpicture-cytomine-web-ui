@@ -87,10 +87,18 @@
 
         <template v-if="isPanelDisplayed('hide-tools')">
           <li v-if="isPanelDisplayed('info')">
-            <a @click="togglePanel('info')" :class="{active: activePanel === 'info'}">
+            <a @click="togglePanel('info')" :class="{active: ['info', 'metadata'].includes(activePanel)}">
               <i class="fas fa-info"></i>
             </a>
-            <information-panel class="panel-options" v-show="activePanel === 'info'" :index="index" />
+            <information-panel
+              class="panel-options"
+              v-show="activePanel === 'info'"
+              :index="index"
+              @openMetadata="togglePanel('metadata')"
+            />
+            <div v-show="activePanel === 'metadata'">
+              <metadata-panel class="panel-metadata" :index="index" />
+            </div>
           </li>
 
           <li v-if="isPanelDisplayed('digital-zoom')">
@@ -164,7 +172,9 @@
 
     <rotation-selector class="rotation-selector-wrapper" :index="index" />
 
-    <scale-line :image="image" :zoom="zoom" :mousePosition="projectedMousePosition" />
+    <scale-line v-show="scaleLineCollapsed" :image="image" :zoom="zoom" :mousePosition="projectedMousePosition" />
+
+    <toggle-scale-line :index="index" />
 
     <annotations-container :index="index" @centerView="centerViewOnAnnot" />
 
@@ -190,6 +200,7 @@ import ImageControls from './ImageControls';
 import AnnotationsContainer from './AnnotationsContainer';
 
 import InformationPanel from './panels/InformationPanel';
+import MetadataPanel from './panels/MetadataPanel.vue';
 import DigitalZoom from './panels/DigitalZoom';
 import ColorManipulation from './panels/ColorManipulation';
 import LinkPanel from './panels/LinkPanel';
@@ -202,6 +213,7 @@ import ReviewPanel from './panels/ReviewPanel';
 import SelectInteraction from './interactions/SelectInteraction';
 import DrawInteraction from './interactions/DrawInteraction';
 import ModifyInteraction from './interactions/ModifyInteraction';
+import ToggleScaleLine from './interactions/ToggleScaleLine';
 
 import {addProj, createProj, getProj} from 'vuelayers/lib/ol-ext';
 
@@ -213,7 +225,7 @@ import WKT from 'ol/format/WKT';
 
 import {ImageConsultation, Annotation, AnnotationType, UserPosition, SliceInstance} from 'cytomine-client';
 
-import {constLib, operation} from '@/utils/color-manipulation.js';
+// import {constLib, operation} from '@/utils/color-manipulation.js';
 
 import constants from '@/utils/constants.js';
 
@@ -234,6 +246,7 @@ export default {
     AnnotationsContainer,
 
     InformationPanel,
+    MetadataPanel,
     DigitalZoom,
     ColorManipulation,
     LinkPanel,
@@ -245,7 +258,8 @@ export default {
 
     SelectInteraction,
     DrawInteraction,
-    ModifyInteraction
+    ModifyInteraction,
+    ToggleScaleLine
   },
   data() {
     return {
@@ -428,6 +442,9 @@ export default {
 
     overviewCollapsed() {
       return this.overview ? this.overview.getCollapsed() : this.imageWrapper.view.overviewCollapsed;
+    },
+    scaleLineCollapsed() {
+      return !this.imageWrapper.view.scaleLineCollapsed;
     },
 
     correction() {
@@ -754,8 +771,8 @@ export default {
 
     if (annot) {
       try {
-        if(annot.image === this.image.id) {
-          if(!this.sliceIds.includes(annot.slice)) {
+        if (annot.image === this.image.id) {
+          if (!this.sliceIds.includes(annot.slice)) {
             let slice = await SliceInstance.fetch(annot.slice);
             await this.$store.dispatch(this.imageModule + 'setActiveSlice', slice);
           }
@@ -788,12 +805,14 @@ export default {
     this.$eventBus.$on('updateMapSize', this.updateMapSize);
     this.$eventBus.$on('shortkeyEvent', this.shortkeyHandler);
     this.$eventBus.$on('selectAnnotation', this.selectAnnotationHandler);
+    this.$eventBus.$on('closeMetadata', () => this.$store.commit(this.imageModule + 'togglePanel', 'info'));
     this.setInitialZoom();
   },
   beforeDestroy() {
     this.$eventBus.$off('updateMapSize', this.updateMapSize);
     this.$eventBus.$off('shortkeyEvent', this.shortkeyHandler);
     this.$eventBus.$off('selectAnnotation', this.selectAnnotationHandler);
+    this.$eventBus.$off('closeMetadata');
     clearTimeout(this.timeoutSavePosition);
   }
 };
@@ -926,6 +945,19 @@ $colorOpenedPanelLink: #6c95c8;
 .panels li:nth-child(5) .panel-options {
   top: -5.5em;
   bottom: auto;
+}
+
+/* ----- Metadata panel ---- */
+
+.panel-metadata {
+  position: absolute;
+  top: -1.5em;
+  right: $widthPanelBar;
+  min-width: 30em;
+  min-height: 30em;
+  background: $backgroundPanel;
+  padding: 0.75em;
+  border-radius: 5px 0 0 5px;
 }
 
 /* ----- CUSTOM STYLE FOR OL CONTROLS ----- */

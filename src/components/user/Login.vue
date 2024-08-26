@@ -18,7 +18,7 @@
     <p class="panel-heading">
       <i class="fas fa-user" aria-hidden="true"></i>
       {{$t('forgot-username')}}
-      <a href="https://doc.cytomine.org" target="_blank"><img src="@/assets/logo.svg" id="logo" alt="Cytomine"></a>
+      <a href="https://uliege.cytomine.org/" target="_blank"><img src="@/assets/logo.svg" id="logo" alt="Cytomine"></a>
     </p>
     <div class="panel-block">
       <form @submit.prevent="sendUsername">
@@ -38,7 +38,7 @@
     <p class="panel-heading">
       <i class="fas fa-user" aria-hidden="true"></i>
       {{$t('forgot-password')}}
-      <a href="https://doc.cytomine.org" target="_blank"><img src="@/assets/logo.svg" id="logo" alt="Cytomine"></a>
+      <a href="https://uliege.cytomine.org/" target="_blank"><img src="@/assets/logo.svg" id="logo" alt="Cytomine"></a>
     </p>
     <div class="panel-block">
       <form @submit.prevent="resetPassword()">
@@ -60,16 +60,16 @@
     <p class="panel-heading">
       <i class="fas fa-user" aria-hidden="true"></i>
       {{$t('login')}}
-      <a href="https://doc.cytomine.org" target="_blank"><img src="@/assets/logo.svg" id="logo" alt="Cytomine"></a>
+      <a href="https://uliege.cytomine.org/" target="_blank"><img src="@/assets/logo.svg" id="logo" alt="Cytomine"></a>
     </p>
     <div class="panel-block">
       <form @submit.prevent="login()">
         <b-field :label="$t('username')">
-          <b-input v-model="username" />
+          <b-input minlength="1" maxlength="50" v-model="username" />
         </b-field>
 
         <b-field :label="$t('password')">
-          <b-input type="password" v-model="password" />
+          <b-input type="password" password-reveal minlength="4" maxlength="100" v-model="password" />
         </b-field>
 
         <div class="columns">
@@ -80,7 +80,7 @@
           </div>
 
           <div class="column has-text-right">
-            <button class="button is-link"> {{$t('button-login')}}</button>
+            <button :disabled="!loginEnabled" class="button is-link"> {{$t('button-login')}}</button>
           </div>
         </div>
       </form>
@@ -121,7 +121,10 @@ export default {
     };
   },
   computed: {
-    currentUser: get('currentUser/user')
+    currentUser: get('currentUser/user'),
+    loginEnabled() {
+      return !!this.username && !!this.password;
+    }
   },
   methods: {
     async login() {

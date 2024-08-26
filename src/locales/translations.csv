@@ -485,6 +485,7 @@ nb-success-jobs,Number of successful jobs,Nombre d'exécutions réussies,Número
 new-algorithm,New algorithm,Nouvel algorithme,Nuevo algoritmo,Nieuw algoritme
 new-name,New name,Nouveau nom,Nuevo nombre,Nieuwe naam
 new-ontology,New ontology,Nouvelle ontologie,Nueva ontología,Nieuwe ontologie
+new-project-with-filtered-images,New project with filtered images,Nouveau projet avec des images filtrées,Nuevo proyecto con imágenes filtradas,Nieuw project met gefilterde afbeeldingen
 new-project,New project,Nouveau projet,Nuevo proyecto,Nieuw project
 nm-per-pixel,nm/pixel,nm/pixel,nm/píxel,nm/pixel
 nm-per-slice,nm/slice,nm/plan,,nm/kaart
@@ -867,6 +868,7 @@ select-layer-placeholder,Select a layer,Sélectionner un calque,Seleccione una c
 select-layer,Select a layer,Sélectionner un calque,Selecciona una capa,Selecteer een laag
 select-ontology,Select ontology,Choisir l'ontologie,Seleccione ontología,Kies ontologie
 select-options,Select options,Sélectionner les options,Seleccione opciones,Selecteer opties
+select-project,Select a project,Sélectionner un project,Seleccione un proyecto,Selecteer een project
 select,Select,Sélectionner,Seleccione,Selecteer
 send-to-all-project-members,Send to all project members,Envoyer à tous les membres du projet,Enviar a todos los miembros del proyecto,Stuur naar alle projectleden
 send-to-some-members,Send to some project members only,Envoyer à certains membres seulement,Enviar solo a algunos miembros del proyecto,Alleen naar bepaalde projectleden verzenden
@@ -1065,6 +1067,7 @@ width,Width,Largeur,Anchura,Breedte
 workspace,Workspace,Espace de travail,Espacio de trabajo,Werkruimte
 x-resolution,X resolution,Résolution X,,X-resolutie
 y-resolution,Y resolution,Résolution Y,,Y-resolutie
+x-y-resolution,X/Y resolution,Résolution X/Y,,X/Y-resolutie
 yellow,Yellow,Jaune,Amarillo,Geel
 yes,Yes,Oui,Sí,Ja
 you-are-reviewing-image-since,You are reviewing this image since {date},Cette image est en cours de validation depuis le {date},Estás revisando esta imagen desde {date},Deze afbeelding wordt gevalideerd sinds {date}
