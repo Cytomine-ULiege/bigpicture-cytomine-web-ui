@@ -154,7 +154,7 @@ export default {
       return this.terms.find((term) => term.id === Number(id));
     },
     async fetchAnnotations() {
-      await Promise.all(this.data['similarities'].map(async ([id, _]) => {
+      await Promise.all(this.data['similarities'].map(async ([id, _]) => { // eslint-disable-line no-unused-vars
         this.annotations.push(await Annotation.fetch(id));
       }));
     }
