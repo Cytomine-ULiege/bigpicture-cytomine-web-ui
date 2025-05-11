@@ -580,6 +580,12 @@ export default {
       catch(err) {
         this.$notify({type: 'error', text: this.$t('notif-error-annotation-deletion')});
       }
+    },
+    removeProp(prop) {
+      this.properties = this.properties.filter(p => p.id !== prop.id);
+    },
+    addProp(prop) {
+      this.properties.push(prop);
     }
   },
   async created() {

@@ -81,6 +81,9 @@ export default {
         this.$store.commit(this.viewerModule + 'setCopiedAnnot', annot);
       }
     },
+    showSimilarAnnotations() {
+      return this.imageWrapper.selectedFeatures.showSimilarAnnotations;
+    }
   },
   methods: {
     isPanelDisplayed(panel) {
@@ -146,6 +149,10 @@ export default {
     selectAnnotation({annot, options}) {
       let index = (options.trySameView) ? this.index : null;
       this.$eventBus.$emit('selectAnnotation', {index, annot, center: true});
+
+      if (this.image.id !== annot.image) {
+        this.$store.commit(this.imageModule + 'clearSimilarAnnotations');
+      }
     },
 
     centerView({annot, sameView = false}) {
@@ -157,5 +164,8 @@ export default {
       }
     }
   },
+  beforeDestroy() {
+    this.$store.commit(this.imageModule + 'setShowSimilarAnnotations', false);
+  }
 };
 </script>
