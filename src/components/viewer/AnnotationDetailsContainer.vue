@@ -59,6 +59,12 @@
           @deletion="$emit('delete', annot)"
           @searchSimilarAnnotations="searchSimilarAnnotations"
         />
+
+        <annotation-simple-details
+          v-else
+          :annotation="selectedFeature.properties.annot"
+          @centerView="$emit('centerView', ($event) ? $event : annot)"
+        />
       </div>
 
       <!-- HACK for prev/next linked annotation shortkeys -->
@@ -79,7 +85,6 @@
 <script>
 import VueDraggableResizable from 'vue-draggable-resizable';
 
-import AnnotationDetails from '@/components/annotations/AnnotationDetails';
 import {Cytomine, UserCollection} from 'cytomine-client';
 import {fullName} from '@/utils/user-utils.js';
 import AnnotationDetails from '@/components/annotations/AnnotationDetails';
@@ -226,6 +231,7 @@ export default {
 
       this.$store.commit(this.imageModule + 'setShowSimilarAnnotations', true);
       this.$store.commit(this.imageModule + 'setSimilarAnnotations', data);
+      this.$store.commit(this.imageModule + 'setQueryAnnotation', this.selectedFeature.properties.annot);
     }
   },
   created() {

@@ -24,6 +24,14 @@
       @updateProperties="updateProperties"
       @delete="handleDeletion"
     />
+
+    <similar-annotation
+      v-if="showSimilarAnnotations"
+      :image="image"
+      :index="index"
+      @select="selectAnnotation"
+      @updateTermsOrTracks="updateTermsOrTracks"
+    />
   </div>
 </template>
 
@@ -35,6 +43,7 @@ import WKT from 'ol/format/WKT';
 
 import AnnotationsList from './AnnotationsList';
 import AnnotationDetailsContainer from './AnnotationDetailsContainer';
+import SimilarAnnotation from '@/components/annotations/SimilarAnnotation';
 import {listAnnotationsInGroup, updateAnnotationLinkProperties} from '@/utils/annotation-utils';
 
 import {Annotation} from 'cytomine-client';
@@ -52,6 +61,7 @@ export default {
   components: {
     AnnotationsList,
     AnnotationDetailsContainer,
+    SimilarAnnotation,
   },
   computed: {
     configUI: get('currentProject/configUI'),
