@@ -45,6 +45,10 @@
             {{ data.distance.toFixed(2) }}%
           </div>
         </div>
+
+        <div class="no-annotation-content" v-if="similarities.length === 0">
+          <p>{{ $t('no-similar-annotations-found') }}</p>
+        </div>
       </div>
 
       <div v-if="suggestedTerms.length > 0">
@@ -230,6 +234,10 @@ h1 {
   margin-left: 0.4em;
   padding: 0;
   text-align: left;
+}
+
+.no-annotation-content {
+  padding: 0.5rem;
 }
 
 .similar-annotations-playground {
