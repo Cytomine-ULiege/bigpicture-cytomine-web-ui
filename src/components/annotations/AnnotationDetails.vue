@@ -166,6 +166,17 @@
         </td>
       </tr>
 
+      <template>
+        <tr>
+          <td colspan="2">
+            <h5>{{ $t('similar-annotations') }}</h5>
+            <button class="button is-small is-fullwidth" @click="$emit('searchSimilarAnnotations')">
+              {{ $t('search-similar-annotation') }}
+            </button>
+          </td>
+        </tr>
+      </template>
+
       <template v-if="isPropDisplayed('linked-annotations')">
         <tr>
           <td colspan="2">
@@ -580,7 +591,7 @@ export default {
       catch(err) {
         this.$notify({type: 'error', text: this.$t('notif-error-annotation-deletion')});
       }
-    }
+    },
   },
   async created() {
     if(this.isPropDisplayed('comments') && this.annotation.type == AnnotationType.USER) {
@@ -603,6 +614,11 @@ export default {
       this.loadPropertiesError = true;
       console.log(error);
     }
+
+    this.$eventBus.$emit('hide-similar-annotations');
+  },
+  destroyed() {
+    this.$eventBus.$emit('hide-similar-annotations');
   },
 };
 </script>
