@@ -86,7 +86,6 @@
 import VueDraggableResizable from 'vue-draggable-resizable';
 
 import {Cytomine, UserCollection} from 'cytomine-client';
-import {fullName} from '@/utils/user-utils.js';
 import AnnotationDetails from '@/components/annotations/AnnotationDetails';
 import AnnotationLinksPreview from '@/components/annotations/AnnotationLinksPreview';
 import AnnotationSimpleDetails from '@/components/viewer/annotations/AnnotationSimpleDetails';
@@ -158,9 +157,7 @@ export default {
       return this.$store.getters[this.imageModule + 'selectedFeature'];
     },
     allUsers() {
-      let allUsers = this.projectUsers;
-      allUsers.forEach(user => user.fullName = fullName(user));
-      return allUsers;
+      return this.projectUsers;
     },
     annot() {
       return this.selectedFeature ? this.selectedFeature.properties.annot : {};
